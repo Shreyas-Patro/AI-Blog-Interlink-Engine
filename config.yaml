@@ -1,0 +1,17 @@
+similarity_threshold: 0.50
+top_n_matches: 5
+max_links_per_article: 5
+chunk_min_words: 100
+chunk_max_words: 300
+anchor_min_words: 3
+anchor_max_words: 6
+injection_buffer_chars: 150
+llm_confidence_threshold: 3
+embedding_provider: sentence-transformers
+embedding_model: all-MiniLM-L6-v2
+llm_provider: anthropic
+llm_model: claude-sonnet-4-20250514
+auto_approve_threshold: null
+dry_run: false
+db_path: link_engine.db
+output_dir: ./output
