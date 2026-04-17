@@ -268,5 +268,74 @@ def debug_scores():
 
     console.print("\n[dim]Green = above 0.75  Yellow = 0.50-0.75  Red = below 0.50[/dim]")
     session.close()
+    
+
+@app.command()
+def rerun(
+    error_id: Optional[str] = typer.Option(None, "--error-id"),
+    stage: Optional[str] = typer.Option(None, "--stage"),
+    all_errors: bool = typer.Option(False, "--all-errors"),
+):
+    """Re-queue failed items for reprocessing."""
+    from link_engine.db.session import get_session_factory
+    from link_engine.db.models import Error, Match, Chunk
+    from link_engine.stages.anchor import generate_anchor
+    from link_engine.stages.embed import embed_chunks
+
+    factory = get_session_factory()
+    session = factory()
+
+    query = session.query(Error).filter(
+        Error.resolved_at.is_(None),
+        Error.rerun_eligible == True,
+    )
+
+    if error_id:
+        query = query.filter(Error.error_id == error_id)
+    elif stage:
+        query = query.filter(Error.stage == stage)
+    elif not all_errors:
+        console.print("[red]Specify --error-id, --stage, or --all-errors[/red]")
+        raise typer.Exit(1)
+
+    errors = query.all()
+    if not errors:
+        console.print("[yellow]No eligible errors found.[/yellow]")
+        return
+
+    console.print(f"Rerunning {len(errors)} error(s)...")
+
+    for err in errors:
+        try:
+            if err.stage == "anchor" and err.match_id:
+                match = session.get(Match, err.match_id)
+                if match:
+                    match.status = "pending_anchor"
+                    session.flush()
+                    success = generate_anchor(match, session)
+                    if success:
+                        err.resolved_at = datetime.utcnow()
+                        console.print(f"  Anchor rerun success: {err.error_id[:8]}")
+                    else:
+                        console.print(f"  Anchor rerun failed: {err.error_id[:8]}")
+
+            elif err.stage == "embedding" and err.chunk_id:
+                chunk = session.get(Chunk, err.chunk_id)
+                if chunk:
+                    embed_chunks([chunk], session)
+                    err.resolved_at = datetime.utcnow()
+                    console.print(f"  Embedding rerun success: {err.error_id[:8]}")
+
+            else:
+                console.print(f"  Manual rerun needed for stage '{err.stage}': {err.error_id[:8]}")
+
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            console.print(f"  Rerun failed: {e}")
+
+    session.close()
+
 if __name__ == "__main__":
     app()
