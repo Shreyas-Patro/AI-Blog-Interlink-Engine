@@ -1,16 +1,51 @@
-similarity_threshold: 0.52
+# Semantic gate threshold — filters lexical phrase matches where context doesn't fit
+# Phrase must be present AND semantic similarity >= this value for a match to survive
+similarity_threshold: 0.55
+ 
+# How many phrase-hit candidates to keep per source chunk before dedup
 top_n_matches: 8
+ 
+# Max outbound links per source article
 max_links_per_article: 6
+ 
+# Chunking
 chunk_min_words: 60
 chunk_max_words: 350
-anchor_min_words: 3
-anchor_max_words: 7
+ 
+# Anchor length bounds — used when deriving long-tail phrases from target titles
+anchor_min_words: 1
+anchor_max_words: 8
+ 
+# Injection safety
 injection_buffer_chars: 150
+ 
+# LLM is now a gate (confidence scorer), not a generator
 llm_confidence_threshold: 3
+ 
+# Title prefixes to strip when deriving long-tail phrases
+# Order matters — longer prefixes should come first
+title_prefix_strip:     #This section has to be fixed and implemented after looking at vault and canvas homes
+  - "The Complete Guide to"
+  - "A Complete Guide to"
+  - "A Beginner's Guide to"
+  - "Getting Started with"
+  - "Introduction to"
+  - "An Introduction to"
+  - "A Guide to"
+  - "Guide to"
+  - "What are"
+  - "What is"
+  - "How to"
+  - "Basics of"
+  - "Intro to"
+  - "Understanding"
+  - "Learning"
+ 
 embedding_provider: sentence-transformers
 embedding_model: all-mpnet-base-v2
 llm_provider: anthropic
 llm_model: claude-sonnet-4-20250514
+ 
 auto_approve_threshold: null
 dry_run: false
 db_path: link_engine.db

@@ -12,7 +12,6 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    event,
 )
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -40,6 +39,20 @@ class Article(Base):
     content_hash = Column(String)
     frontmatter_json = Column(Text)
     status = Column(String, default="new")  # new | unchanged | changed | error
+
+    # NEW: long-tail anchor phrases derived from the title.
+    # JSON list of lowercased phrases, e.g.
+    # ["how to avoid overfitting in machine learning models",
+    #  "avoid overfitting in machine learning models"]
+    title_phrases_json = Column(Text)
+
+    # NEW: embedding of title + first chunk used as the "article representation".
+    # Used as the semantic gate when a source chunk matches one of this article's
+    # title_phrases — we compare source-chunk-embedding to this vector.
+    representation_vector = Column(LargeBinary)
+    representation_model = Column(String)
+    representation_hash = Column(String)  # hash of (title + intro) for cache invalidation
+
     last_ingested_at = Column(DateTime, default=_now)
     created_at = Column(DateTime, default=_now)
     updated_at = Column(DateTime, default=_now, onupdate=_now)
@@ -85,12 +98,22 @@ class Embedding(Base):
 
 class Match(Base):
     __tablename__ = "matches"
-    __table_args__ = (UniqueConstraint("source_chunk_id", "target_chunk_id", name="uq_match_pair"),)
+    __table_args__ = (UniqueConstraint("source_chunk_id", "target_chunk_id", "matched_phrase",
+                                       name="uq_match_pair_phrase"),)
 
     match_id = Column(String, primary_key=True, default=_uuid)
     source_chunk_id = Column(String, ForeignKey("chunks.chunk_id"), nullable=False)
     target_chunk_id = Column(String, ForeignKey("chunks.chunk_id"), nullable=False)
     similarity_score = Column(Float, nullable=False)
+
+    # NEW: the actual long-tail phrase, copied verbatim from source
+    # (preserves original capitalisation). This IS the anchor text.
+    matched_phrase = Column(String)
+    phrase_char_start = Column(Integer)  # offset within source chunk.text
+    phrase_char_end = Column(Integer)
+    # which title phrase (lowercased) was matched — for debugging / review UI
+    matched_title_phrase = Column(String)
+
     status = Column(String, default="pending_anchor")  # pending_anchor | anchor_ready | anchor_error
     match_hash = Column(String)
     created_at = Column(DateTime, default=_now)
@@ -127,7 +150,7 @@ class Injection(Base):
     injection_id = Column(String, primary_key=True, default=_uuid)
     anchor_id = Column(String, ForeignKey("anchors.anchor_id"), nullable=False)
     run_id = Column(String)
-    status = Column(String, default="pending")  # pending | injected | injection_error | skipped
+    status = Column(String, default="pending")
     error_message = Column(Text)
     injected_at = Column(DateTime)
     backup_path = Column(String)
@@ -142,7 +165,7 @@ class Error(Base):
 
     error_id = Column(String, primary_key=True, default=_uuid)
     run_id = Column(String)
-    stage = Column(String)  # ingestion | chunking | embedding | matching | anchor | injection
+    stage = Column(String)
     article_id = Column(String, ForeignKey("articles.article_id"), nullable=True)
     chunk_id = Column(String, nullable=True)
     match_id = Column(String, nullable=True)

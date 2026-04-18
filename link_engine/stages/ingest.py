@@ -6,8 +6,8 @@ from typing import Optional
 
 import frontmatter
 
-from link_engine.db.models import Article, Error, Run
-from link_engine.db.session import get_session
+from link_engine.db.models import Article, Error
+from link_engine.stages.extract_phrases import extract_phrases_for_article
 
 
 def compute_article_id(slug: str) -> str:
@@ -19,10 +19,6 @@ def compute_content_hash(body: str) -> str:
 
 
 def ingest_file(file_path: Path, run_id: str, session) -> Optional[Article]:
-    """
-    Ingest a single markdown file. Returns Article with status set.
-    Returns None on error.
-    """
     try:
         raw = file_path.read_text(encoding="utf-8")
         post = frontmatter.loads(raw)
@@ -30,7 +26,7 @@ def ingest_file(file_path: Path, run_id: str, session) -> Optional[Article]:
         slug = post.metadata.get("slug") or file_path.stem
         title = post.metadata.get("title", file_path.stem)
         url = post.metadata.get("url", f"/{slug}")
-        body = post.content  # markdown body WITHOUT frontmatter
+        body = post.content
 
         article_id = compute_article_id(slug)
         content_hash = compute_content_hash(body)
@@ -40,7 +36,11 @@ def ingest_file(file_path: Path, run_id: str, session) -> Optional[Article]:
         if existing:
             if existing.content_hash == content_hash:
                 existing.status = "unchanged"
-                return existing  # caller checks status == "unchanged" to skip
+                # Cached extraction is reused automatically inside extract_phrases_for_article.
+                # This only makes an LLM call if no prior extraction exists for this hash.
+                if not existing.title_phrases_json:
+                    extract_phrases_for_article(existing, body, session, run_id)
+                return existing
             else:
                 existing.status = "changed"
                 existing.content_hash = content_hash
@@ -49,6 +49,8 @@ def ingest_file(file_path: Path, run_id: str, session) -> Optional[Article]:
                 existing.file_path = str(file_path.resolve())
                 existing.frontmatter_json = json.dumps(dict(post.metadata))
                 existing.last_ingested_at = datetime.utcnow()
+                # Content changed — re-extract phrases (one LLM call)
+                extract_phrases_for_article(existing, body, session, run_id)
                 return existing
         else:
             article = Article(
@@ -63,26 +65,23 @@ def ingest_file(file_path: Path, run_id: str, session) -> Optional[Article]:
                 last_ingested_at=datetime.utcnow(),
             )
             session.add(article)
+            session.flush()
+            # New article — one LLM call to extract phrases, then cached forever
+            extract_phrases_for_article(article, body, session, run_id)
             return article
 
     except Exception as e:
-        print(f"  [INGEST ERROR] {file_path.name}: {e}")
-        error = Error(
+        session.add(Error(
             run_id=run_id,
             stage="ingestion",
             error_type="ingestion_error",
             message=str(e),
             rerun_eligible=True,
-        )
-        session.add(error)
+        ))
         return None
 
 
 def ingest_directory(directory: Path, run_id: str, session) -> dict:
-    """
-    Ingest all .md files in a directory.
-    Returns {"new": [...], "changed": [...], "unchanged": [...], "errors": int}
-    """
     md_files = list(directory.glob("**/*.md"))
     results = {"new": [], "changed": [], "unchanged": [], "errors": 0}
 

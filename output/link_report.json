@@ -1,0 +1,54 @@
+[
+  {
+    "injection_id": "599ded89-277e-4b07-96d0-36c34af3cd5d",
+    "source_article_title": "How Much Does a Kitchen Renovation Cost in 2026",
+    "source_article_slug": "kitchen-renovation-cost",
+    "source_chunk_heading": "How to Budget a Kitchen Renovation Realistically",
+    "target_article_title": "Designing Kitchen Lighting That Actually Works",
+    "target_article_slug": "kitchen-lighting-design",
+    "target_chunk_heading": "Why Most Kitchens Are Badly Lit",
+    "anchor_text": "modern kitchen lighting design",
+    "similarity_score": 0.7226,
+    "llm_confidence": 5,
+    "injected_at": "2026-04-17T14:08:28.789207"
+  },
+  {
+    "injection_id": "357c35f6-87d6-453a-9031-983de849c72c",
+    "source_article_title": "How Much Does a Kitchen Renovation Cost in 2026",
+    "source_article_slug": "kitchen-renovation-cost",
+    "source_chunk_heading": "The Hidden Costs Nobody Warns You About",
+    "target_article_title": "How to Choose a Renovation Contractor",
+    "target_article_slug": "choose-renovation-contractor",
+    "target_chunk_heading": "Why the Contractor Matters More Than the Design",
+    "anchor_text": "How to choose a renovation contractor",
+    "similarity_score": 0.7236,
+    "llm_confidence": 5,
+    "injected_at": "2026-04-17T14:08:28.789715"
+  },
+  {
+    "injection_id": "e1ffd793-ea04-416a-9b24-85b8a5cbfa61",
+    "source_article_title": "Designing Kitchen Lighting That Actually Works",
+    "source_article_slug": "kitchen-lighting-design",
+    "source_chunk_heading": "Working With Your Contractor on Lighting",
+    "target_article_title": "How Much Does a Kitchen Renovation Cost in 2026",
+    "target_article_slug": "kitchen-renovation-cost",
+    "target_chunk_heading": "What You Actually Pay For in a Kitchen Renovation",
+    "anchor_text": "how much does a kitchen renovation cost",
+    "similarity_score": 0.6565,
+    "llm_confidence": 5,
+    "injected_at": "2026-04-17T14:08:28.837350"
+  },
+  {
+    "injection_id": "201fc919-2916-493e-abfa-902bbf25954d",
+    "source_article_title": "How to Choose a Renovation Contractor",
+    "source_article_slug": "choose-renovation-contractor",
+    "source_chunk_heading": "Scoping the Bid Correctly",
+    "target_article_title": "How Much Does a Kitchen Renovation Cost in 2026",
+    "target_article_slug": "kitchen-renovation-cost",
+    "target_chunk_heading": "What You Actually Pay For in a Kitchen Renovation",
+    "anchor_text": "How much does a kitchen renovation cost",
+    "similarity_score": 0.5799,
+    "llm_confidence": 5,
+    "injected_at": "2026-04-17T14:08:28.881930"
+  }
+]

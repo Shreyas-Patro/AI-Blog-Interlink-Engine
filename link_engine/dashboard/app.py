@@ -110,8 +110,9 @@ if tab_name == "Review Queue":
             f"| Score: {score:.2f} | Confidence: {confidence}/5",
             expanded=False,
         ):
+            st.info(f" Matched on title phrase: **\"{anchor.match.matched_title_phrase or '—'}\"**")
             left, right = st.columns(2)
-
+            
             with left:
                 st.markdown("**Source passage**")
                 text = source.text
